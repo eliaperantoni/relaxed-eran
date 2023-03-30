@@ -1,0 +1,5 @@
+.vscode/
+nets/
+ELINA/
+__pycache__/
+*.sh
