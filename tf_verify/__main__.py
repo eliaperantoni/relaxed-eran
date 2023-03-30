@@ -1389,9 +1389,9 @@ else:
             #print("specLB ", specLB)
             is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)
         else:
-            label,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+            plausible_classes,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("concrete ", nlb[-1])
-            if label == int(test[0]):
+            if plausible_classes == [int(test[0])]:
                 is_correctly_classified = True
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
@@ -1494,7 +1494,7 @@ else:
                     print("img", i, "Failed")
             else:
                 if domain.endswith("poly"):
-                    perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, "deeppoly",
+                    plausible_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, "deeppoly",
                                                                                       config.timeout_lp,
                                                                                       config.timeout_milp,
                                                                                       config.use_default_heuristic,
@@ -1507,9 +1507,9 @@ else:
                                                                                       partial_milp=0,
                                                                                       max_milp_neurons=0,
                                                                                       approx_k=0)
-                    print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
-                if not domain.endswith("poly") or not (perturbed_label==label):
-                    perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
+                    print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels,"plausible classes", plausible_classes)
+                if not domain.endswith("poly") or not (plausible_classes==[label]):
+                    plausible_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
                                                                                       config.timeout_lp,
                                                                                       config.timeout_milp,
                                                                                       config.use_default_heuristic,
@@ -1523,8 +1523,8 @@ else:
                                                                                       partial_milp=config.partial_milp,
                                                                                       max_milp_neurons=config.max_milp_neurons,
                                                                                       approx_k=config.approx_k)
-                    print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels)
-                if (perturbed_label==label):
+                    print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels,"plausible classes", plausible_classes)
+                if (plausible_classes==[label]):
                     print("img", i, "Verified", label)
                     verified_images += 1
                 else:

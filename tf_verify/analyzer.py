@@ -261,6 +261,19 @@ class Analyzer:
 
         label_failed = []
         x = None
+
+        plausible_classes = []
+        for at_risk in range(output_size):
+            survived= True
+            for competitor in range(output_size):
+                if self.is_greater(self.man, element, competitor, at_risk, self.use_default_heuristic):
+                    survived = False
+                    break
+            if survived:
+                plausible_classes.append(at_risk)
+
+        return plausible_classes, nlb, nub, label_failed, x
+
         if self.output_constraints is None:
             
             candidate_labels = []
