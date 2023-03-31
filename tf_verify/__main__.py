@@ -74,6 +74,9 @@ def isnetworkfile(fname):
     return fname
 
 
+def pools(s: str):
+    return [[int(cls) for cls in pool.split()] for pool in s.split(";")]
+
 
 def parse_input_box(text):
     intervals_list = []
@@ -241,6 +244,13 @@ def estimate_grads(specLB, specUB, dim_samples=3, input_shape=[1]):
     return diffs / dim_samples
 
 
+def check_pool_inclusion(plausible_classes, acceptable_pools):
+    plausible_classes = set(plausible_classes)
+    for pool in acceptable_pools:
+        if plausible_classes.issubset(set(pool)):
+            return pool
+    return None
+
 
 progress = 0.0
 def print_progress(depth):
@@ -386,6 +396,7 @@ parser.add_argument("--approx_k", type=str2bool, default=config.approx_k, help="
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
 parser.add_argument('--logname', type=str, default=None, help='Directory of log files in `logdir`, if not specified timestamp is used')
+parser.add_argument('--class-pools', type=pools, default=config.class_pools, help='Acceptable pools of classes. Format is like: X Y Z; A B C; D E')
 
 
 args = parser.parse_args()
@@ -1508,7 +1519,7 @@ else:
                                                                                       max_milp_neurons=0,
                                                                                       approx_k=0)
                     print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels,"plausible classes", plausible_classes)
-                if not domain.endswith("poly") or not (plausible_classes==[label]):
+                if not domain.endswith("poly") or check_pool_inclusion(plausible_classes, config.class_pools) is None:
                     plausible_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
                                                                                       config.timeout_lp,
                                                                                       config.timeout_milp,
@@ -1524,8 +1535,10 @@ else:
                                                                                       max_milp_neurons=config.max_milp_neurons,
                                                                                       approx_k=config.approx_k)
                     print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels,"plausible classes", plausible_classes)
-                if (plausible_classes==[label]):
-                    print("img", i, "Verified", label)
+
+                included_in_pool = check_pool_inclusion(plausible_classes, config.class_pools)
+                if (included_in_pool is not None):
+                    print("img", i, "Verified", plausible_classes, "is subset of", included_in_pool)
                     verified_images += 1
                 else:
                     if complete==True and failed_labels is not None:
@@ -1560,7 +1573,7 @@ else:
                             else:
                                 print("img", i, "Failed, without a adversarial example")
                         else:
-                            print("img", i, "Failed")
+                            print("img", i, "Failed", plausible_classes, "is NOT subset of any of", config.class_pools)
 
             end = time.time()
             cum_time += end - start # only count samples where we did try to certify

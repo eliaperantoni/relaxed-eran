@@ -3,3 +3,4 @@ nets/
 ELINA/
 __pycache__/
 *.sh
+vis.py

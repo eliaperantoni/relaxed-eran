@@ -85,3 +85,5 @@ class config:
     gamma = float('inf')
     quant_step = None
 
+    class_pools = []
+
