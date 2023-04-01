@@ -271,7 +271,7 @@ class Analyzer:
                     break
             if survived:
                 plausible_classes.append(at_risk)
-
+        elina_abstract0_free(self.man, element)
         return plausible_classes, nlb, nub, label_failed, x
 
         if self.output_constraints is None:
