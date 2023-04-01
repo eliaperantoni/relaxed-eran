@@ -21,7 +21,7 @@ $ popd
 ```
 
 - `<nn_path>` is a path to a neural network file. Supported formats are ONNX (`.onnx`), TensorFlow (`.pb`, `.meta`, `.tf`) and PyTorch (`.pyt`). [Here](https://github.com/eth-sri/eran#neural-networks-and-datasets) you can download some pre-trained networks, a few are also adversarially trained.
-- `<epsilon>` the radius of the $\ell_\inty$ ball around a testing sample that defines the perturbation region. See the original repo for more options for input specification.
+- `<epsilon>` the radius of the $\ell_\infty$ ball around a testing sample that defines the perturbation region. See the original repo for more options for input specification.
 - `<dataset>` one of `mnist`, `cifar10`, `acasxu`, and `fashion`. Must match the neural network under analysis.
 - `<pools>` a set of acceptable class pools. Relaxed-ERAN will collect the set of classes that can potentially be predicted for points inside the perturbation region, and robustness is satisfied if this is a subset of any of the provided pools. Each pool must be separated by a semicolon and classes within a pool are separated by space, e.g. `1 2; 3 4 5`.
 
