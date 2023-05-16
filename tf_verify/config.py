@@ -24,6 +24,11 @@ class Device(Enum):
     CUDA = 1
 
 
+class Mode(Enum):
+    HAW_ABSTRACT_ROBUSTNESS = 0
+    COHERENCE = 1
+
+
 class config:
 
     # General options
@@ -86,4 +91,5 @@ class config:
     quant_step = None
 
     class_pools = []
+    mode = Mode.COHERENCE
 

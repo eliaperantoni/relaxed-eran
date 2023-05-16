@@ -100,14 +100,14 @@ class ERAN:
                                 use_milp=use_milp, complete=complete,
                                 partial_milp=partial_milp, max_milp_neurons=max_milp_neurons,
                                 approx_k=approx_k)
-        plausible_classes, nlb, nub, failed_labels, x = analyzer.analyze(terminate_on_failure=terminate_on_failure)
+        pert_region_classes, nlb, nub, failed_labels, x = analyzer.analyze(terminate_on_failure=terminate_on_failure)
         if terminate_on_failure or len(failed_labels) == 0:
             failed_labels = None # rather return nothing than an incomplete list
             
         if testing:
-            return plausible_classes, nn, nlb, nub, output_info
+            return pert_region_classes, nn, nlb, nub, output_info
         else:
-            return plausible_classes, nn, nlb, nub, failed_labels, x
+            return pert_region_classes, nn, nlb, nub, failed_labels, x
 
 
     def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_default_heuristic, output_constraints=None, testing = False, prop=-1):

@@ -31,7 +31,7 @@ import time
 from tqdm import tqdm
 from ai_milp import *
 import argparse
-from config import config
+from config import config, Mode
 from constraint_utils import *
 import re
 import itertools
@@ -48,6 +48,7 @@ from pprint import pprint
 # if config.domain=='gpupoly' or config.domain=='refinegpupoly':
 from refine_gpupoly import *
 from utils import parse_vnn_lib_prop, translate_output_constraints, translate_input_to_box, negate_cstr_or_list_old
+from typing import List, FrozenSet
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -244,12 +245,41 @@ def estimate_grads(specLB, specUB, dim_samples=3, input_shape=[1]):
     return diffs / dim_samples
 
 
-def check_pool_inclusion(plausible_classes, acceptable_pools):
-    plausible_classes = set(plausible_classes)
-    for pool in acceptable_pools:
-        if plausible_classes.issubset(set(pool)):
-            return pool
-    return None
+# Tets whether the analysis was successful, according to the chosen mode, given: 1) the class predicted for the center,
+# 2) the classes predicted for the points inside the perturbation region, and 3) the pools of classes given by the analyst.
+def is_analysis_ok(center_class: int, pert_region_classes: List[int], class_pools: List[List[int]]) -> bool:
+    pert_region_classes: FrozenSet[int] = frozenset(pert_region_classes)
+    class_pools: List[FrozenSet[int]] = [frozenset(class_pool) for class_pool in class_pools]
+
+    print(f"Verifying analysis with mode {config.mode}")
+    print(f"The set of classes inside the perturbation is {pert_region_classes}")
+
+    if config.mode == Mode.HAW_ABSTRACT_ROBUSTNESS:
+        print(f"The class predicted in the center is {center_class}")
+
+        intersect_pert_region: FrozenSet[int] = frozenset.intersection(*[
+            class_pool for class_pool in class_pools if pert_region_classes.issubset(class_pool)
+        ])
+        intersect_center: FrozenSet[int] = frozenset.intersection(*[
+            class_pool for class_pool in class_pools if center_class in class_pool
+        ])
+
+        print(f"The intersection of all the pools that contain the classes in the perturbation region is {intersect_pert_region}")
+        print(f"The intersection of all the pools that contain the class in the center is {intersect_center}")
+
+        if intersect_center == intersect_pert_region:
+            print("They are the same")
+            return True
+        else:
+            print("They are not the same")
+            return False
+    elif config.mode == Mode.COHERENCE:
+        for pool in class_pools:
+            if pert_region_classes.issubset(pool):
+                print(f"It is a subset of the pool {pool}")
+                return True
+        print("It is not a subset of any of the pools")
+        return False
 
 
 progress = 0.0
@@ -396,7 +426,10 @@ parser.add_argument("--approx_k", type=str2bool, default=config.approx_k, help="
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
 parser.add_argument('--logname', type=str, default=None, help='Directory of log files in `logdir`, if not specified timestamp is used')
-parser.add_argument('--class-pools', type=pools, default=config.class_pools, help='Acceptable pools of classes. Format is like: X Y Z; A B C; D E')
+
+
+parser.add_argument('--mode', type=Mode.__getitem__, default=config.mode, help='Analysis mode. Must be "HAW_ROBUSTNESS" or "COHERENCE"')
+parser.add_argument('--class-pools', type=pools, default=config.class_pools, help='Pools of classes. Format is like: X Y Z; A B C; D E')
 
 
 args = parser.parse_args()
@@ -1400,9 +1433,9 @@ else:
             #print("specLB ", specLB)
             is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)
         else:
-            plausible_classes,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+            classes,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("concrete ", nlb[-1])
-            if plausible_classes == [int(test[0])]:
+            if classes == [int(test[0])]:
                 is_correctly_classified = True
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
@@ -1505,7 +1538,7 @@ else:
                     print("img", i, "Failed")
             else:
                 if domain.endswith("poly"):
-                    plausible_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, "deeppoly",
+                    pert_region_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, "deeppoly",
                                                                                       config.timeout_lp,
                                                                                       config.timeout_milp,
                                                                                       config.use_default_heuristic,
@@ -1518,9 +1551,9 @@ else:
                                                                                       partial_milp=0,
                                                                                       max_milp_neurons=0,
                                                                                       approx_k=0)
-                    print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels,"plausible classes", plausible_classes)
-                if not domain.endswith("poly") or check_pool_inclusion(plausible_classes, config.class_pools) is None:
-                    plausible_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
+                    print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels,"perturbation region classes", pert_region_classes)
+                if not domain.endswith("poly") or not is_analysis_ok(label, pert_region_classes, config.class_pools):
+                    pert_region_classes, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
                                                                                       config.timeout_lp,
                                                                                       config.timeout_milp,
                                                                                       config.use_default_heuristic,
@@ -1534,11 +1567,11 @@ else:
                                                                                       partial_milp=config.partial_milp,
                                                                                       max_milp_neurons=config.max_milp_neurons,
                                                                                       approx_k=config.approx_k)
-                    print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels,"plausible classes", plausible_classes)
+                    print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels,"perturbation region classes", pert_region_classes)
 
-                included_in_pool = check_pool_inclusion(plausible_classes, config.class_pools)
-                if (included_in_pool is not None):
-                    print("img", i, "Verified", plausible_classes, "is subset of", included_in_pool)
+                ok_analysis = is_analysis_ok(label, pert_region_classes, config.class_pools)
+                if ok_analysis:
+                    print("img", i, "Verified")
                     verified_images += 1
                 else:
                     if complete==True and failed_labels is not None:
@@ -1573,7 +1606,7 @@ else:
                             else:
                                 print("img", i, "Failed, without a adversarial example")
                         else:
-                            print("img", i, "Failed", plausible_classes, "is NOT subset of any of", config.class_pools)
+                            print("img", i, "Failed")
 
             end = time.time()
             cum_time += end - start # only count samples where we did try to certify
