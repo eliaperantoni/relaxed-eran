@@ -257,7 +257,7 @@ def is_analysis_ok(center_class: int, pert_region_classes: List[int], class_pool
     if config.mode == Mode.ROBUSTNESS:
         assert len(pert_region_classes) >= 1
         if len(pert_region_classes) == 1:
-            assert pert_region_classes[0] == center_class
+            assert pert_region_classes == frozenset([center_class])
             print(f"Analysis is ok because only the single class {center_class} is predicted inside the region")
             return True
         else:
