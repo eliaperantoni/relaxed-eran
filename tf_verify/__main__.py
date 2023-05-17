@@ -254,7 +254,16 @@ def is_analysis_ok(center_class: int, pert_region_classes: List[int], class_pool
     print(f"Verifying analysis with mode {config.mode}")
     print(f"The set of classes inside the perturbation is {pert_region_classes}")
 
-    if config.mode == Mode.HAW_ABSTRACT_ROBUSTNESS:
+    if config.mode == Mode.ROBUSTNESS:
+        assert len(pert_region_classes) >= 1
+        if len(pert_region_classes) == 1:
+            assert pert_region_classes[0] == center_class
+            print(f"Analysis is ok because only the single class {center_class} is predicted inside the region")
+            return True
+        else:
+            print(f"Analysis is bad because multiple different classes are predicted inside the region: {pert_region_classes}")
+            return False
+    elif config.mode == Mode.HAW_ABSTRACT_ROBUSTNESS:
         print(f"The class predicted in the center is {center_class}")
 
         intersect_pert_region: FrozenSet[int] = frozenset.intersection(*[
@@ -428,8 +437,8 @@ parser.add_argument('--logdir', type=str, default=None, help='Location to save l
 parser.add_argument('--logname', type=str, default=None, help='Directory of log files in `logdir`, if not specified timestamp is used')
 
 
-parser.add_argument('--mode', type=Mode.__getitem__, default=config.mode, help='Analysis mode. Must be "HAW_ROBUSTNESS" or "COHERENCE"')
-parser.add_argument('--class-pools', type=pools, default=config.class_pools, help='Pools of classes. Format is like: X Y Z; A B C; D E')
+parser.add_argument('--mode', type=Mode.__getitem__, default=config.mode, help='Analysis mode. Must be one of "ROBUSTNESS", "HAW_ROBUSTNESS", or "COHERENCE"')
+parser.add_argument('--class-pools', type=pools, default=config.class_pools, help='Pools of classes used in "HAW_ROBUSTNESS" and "COHERENCE" modes. Format is like: X Y Z; A B C; D E')
 
 
 args = parser.parse_args()

@@ -25,8 +25,9 @@ class Device(Enum):
 
 
 class Mode(Enum):
-    HAW_ABSTRACT_ROBUSTNESS = 0
-    COHERENCE = 1
+    ROBUSTNESS = 0
+    HAW_ABSTRACT_ROBUSTNESS = 1
+    COHERENCE = 2
 
 
 class config:
@@ -91,5 +92,5 @@ class config:
     quant_step = None
 
     class_pools = []
-    mode = Mode.COHERENCE
+    mode = Mode.ROBUSTNESS
 
