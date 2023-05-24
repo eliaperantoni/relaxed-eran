@@ -4,3 +4,4 @@ ELINA/
 __pycache__/
 *.sh
 vis.py
+venv/

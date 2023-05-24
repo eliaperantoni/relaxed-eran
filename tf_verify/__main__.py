@@ -266,12 +266,15 @@ def is_analysis_ok(center_class: int, pert_region_classes: List[int], class_pool
     elif config.mode == Mode.HAW_ABSTRACT_ROBUSTNESS:
         print(f"The class predicted in the center is {center_class}")
 
+        num_outputs = len(nn.weights[-1])
+        top = list(range(num_outputs))
+
         intersect_pert_region: FrozenSet[int] = frozenset.intersection(*[
             class_pool for class_pool in class_pools if pert_region_classes.issubset(class_pool)
-        ])
+        ], top)
         intersect_center: FrozenSet[int] = frozenset.intersection(*[
             class_pool for class_pool in class_pools if center_class in class_pool
-        ])
+        ], top)
 
         print(f"The intersection of all the pools that contain the classes in the perturbation region is {intersect_pert_region}")
         print(f"The intersection of all the pools that contain the class in the center is {intersect_center}")
