@@ -267,7 +267,7 @@ def is_analysis_ok(center_class: int, pert_region_classes: List[int], class_pool
         print(f"The class predicted in the center is {center_class}")
 
         num_outputs = len(nn.weights[-1])
-        top = set(range(num_outputs))
+        top = frozenset(range(num_outputs))
 
         intersect_pert_region: FrozenSet[int] = frozenset.intersection(*[
             class_pool for class_pool in class_pools if pert_region_classes.issubset(class_pool)
